@@ -24,13 +24,19 @@ function SMODS.current_mod.process_loc_text()
             'Wheel of Fortune gives an edition'
         }
     }
+    G.localization.descriptions.Other['forgiveness'] = {
+        name = 'Seeker of forgiveness',
+        text = {
+            'Returns all scoring',
+            'Sacred Geometry cards'
+        }
+    }
     G.localization.descriptions.Other['bird_sacred'] = {
         name = 'Sacred Geometry',
         text = {
             'This card was marked',
-            'by a crow person,',
-            'becomes "returned"',
-            'when scored'
+            'by a crow person',
+            'to be "returned"'
         }
     }
     G.localization.descriptions.Other['bird_returned_sacred'] = {
@@ -281,6 +287,7 @@ local crow_person = SMODS.Joker{
     -- cards score
     -- (Currently 1/10)
     loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue+1] = {set = 'Other', key = 'forgiveness'}
         return {vars = {G.GAME.probabilities.normal,card.ability.extra.odds,card.ability.extra.returned_geometries}}
     end,
     calculate = function(self, card, context)
@@ -383,11 +390,10 @@ local true_crow = SMODS.Joker{
             'Scoring returned sacred geometry',
             'cards give {X:mult,C:white}X#3#{} mult'
         }},
-    -- has a 1 in 2 chance 
-    -- to mark all scored cards
-    -- as sacred geometry cards, 
+    -- has a 1 in 2 chance to mark all scored cards as sacred geometry cards, Scoring returned sacred geometry cards give X2 mult
     -- Transforms into its true form 
     loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue+1] = {set = 'Other', key = 'forgiveness'}
         return {vars = {G.GAME.probabilities.normal,card.ability.extra.odds,card.ability.extra.x_mult}}
     end,
     calculate = function(self, card, context)

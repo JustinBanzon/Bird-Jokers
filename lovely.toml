@@ -1,0 +1,42 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.ability.rental then badges[#badges + 1] = 'rental' end"
+position = "after"
+payload = '''
+if self.ability.sacred_geometry then 
+    if self.ability.returned then
+        badges[#badges + 1] = 'bird_returned_sacred'
+    else
+        badges[#badges + 1] = 'bird_sacred'
+    end
+end
+'''
+match_indent = false
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if v == 'rental' then info_queue[#info_queue+1] = {key = 'rental', set = 'Other', vars = {G.GAME.rental_rate or 1}} end"
+position = "after"
+payload = '''
+if v == 'bird_returned_sacred' then info_queue[#info_queue+1] = {key = 'bird_returned_sacred', set = 'Other'} end
+if v == 'bird_sacred' then info_queue[#info_queue+1] = {key = 'bird_sacred', set = 'Other'} end
+'''
+match_indent = false
+
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.ability.name == 'Ectoplasm' or self.ability.name == 'Hex' or pseudorandom('wheel_of_fortune') < G.GAME.probabilities.normal/self.ability.extra then" 
+position = "after"
+payload = '''
+self.yep = true
+'''
+match_indent = false

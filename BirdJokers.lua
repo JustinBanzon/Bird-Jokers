@@ -313,21 +313,6 @@ local crow_person = SMODS.Joker{
                 if card.ability.extra.returned_geometries < 10 then
                     card_eval_status_text(card, 'extra', nil, nil, nil, {message = (card.ability.extra.returned_geometries..'/'..10)})
                 else
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ('Transformed!')})
-                    G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function()
-                        local new_card = nil
-                        -- create_card_alt(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, edition_append, forced_edition)
-                        if card.edition then
-                            new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true', nil, true, card.edition)
-                        else
-                            new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true')
-                        end
-                        new_card:add_to_deck()
-                        G.jokers:emplace(new_card)
-                        new_card:start_materialize()
-                        G.GAME.joker_buffer = 0
-                        return true;
-                    end}))
                     G.E_MANAGER:add_event(Event({
                             func = function()
                                 play_sound('tarot1')
@@ -344,6 +329,21 @@ local crow_person = SMODS.Joker{
                                 return true
                             end
                         })) 
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ('Transformed!')})
+                    G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function()
+                        local new_card = nil
+                        -- create_card_alt(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, edition_append, forced_edition)
+                        if card.edition then
+                            new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true', nil, true, card.edition)
+                        else
+                            new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true')
+                        end
+                        new_card:add_to_deck()
+                        G.jokers:emplace(new_card)
+                        new_card:start_materialize()
+                        G.GAME.joker_buffer = 0
+                        return true;
+                    end}))
                     G.GAME.pool_flags["crow_person_transformed"] = true;
 
                 end

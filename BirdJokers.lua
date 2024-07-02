@@ -8,6 +8,8 @@
 ----------------------------------------------
 ------------MOD CODE -------------------------
 --localization
+--Debug (if you want to edit this)
+-- _RELEASE_MODE = false
 
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Other['crow_key'] = {
@@ -313,6 +315,7 @@ local crow_person = SMODS.Joker{
                 if card.ability.extra.returned_geometries < 10 then
                     card_eval_status_text(card, 'extra', nil, nil, nil, {message = (card.ability.extra.returned_geometries..'/'..10)})
                 else
+                    local transfer_edition = card.edition or nil
                     G.E_MANAGER:add_event(Event({
                             func = function()
                                 play_sound('tarot1')
@@ -329,11 +332,10 @@ local crow_person = SMODS.Joker{
                                 return true
                             end
                         })) 
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ('Transformed!')})
                     G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function()
                         local new_card = nil
                         -- create_card_alt(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, edition_append, forced_edition)
-                        if card.edition then
+                        if transfer_edition then
                             new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true', nil, true, card.edition)
                         else
                             new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_crow_person_true')
@@ -345,12 +347,16 @@ local crow_person = SMODS.Joker{
                         return true;
                     end}))
                     G.GAME.pool_flags["crow_person_transformed"] = true;
-
+                    return  {
+                    message = ('Transformed!')
+                    }
                 end
             end
             if pseudorandom('crow_person') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                local marking = false
                 for k, v in ipairs(context.scoring_hand) do
                     if v.ability and not v.ability.sacred_geometry then
+                        marking = true
                         G.E_MANAGER:add_event(Event({
                             trigger = 'before',
                             delay = 0.0,
@@ -362,8 +368,10 @@ local crow_person = SMODS.Joker{
                         }))
                     end
                 end
-                card:juice_up()
-                card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                if marking then
+                    card:juice_up()
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                end
             end
         end
     end,
@@ -418,8 +426,10 @@ local true_crow = SMODS.Joker{
                 card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("returned!")})
             end
             if pseudorandom('crow_person') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                local marking = false
                 for k, v in ipairs(context.scoring_hand) do
                     if v.ability and not v.ability.sacred_geometry then
+                        marking = true
                         G.E_MANAGER:add_event(Event({
                             trigger = 'before',
                             delay = 0.0,
@@ -431,8 +441,10 @@ local true_crow = SMODS.Joker{
                         }))
                     end
                 end
-                card:juice_up()
-                card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                if marking then
+                    card:juice_up()
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                end
             end
         end
         if context.individual and context.cardarea == G.play then

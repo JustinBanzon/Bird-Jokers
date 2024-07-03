@@ -30,6 +30,19 @@ if v == 'bird_sacred' then info_queue[#info_queue+1] = {key = 'bird_sacred', set
 '''
 match_indent = false
 
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "set_profile_progress()"
+position = "before"
+payload = '''
+-- Global variables stuff
+self.bird_jokers_global_modifiers = {
+    "sacred_geometry",
+    "returned"
+}
+'''
+match_indent = true
 
 [[patches]]
 [patches.pattern]

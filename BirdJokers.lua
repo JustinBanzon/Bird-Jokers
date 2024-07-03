@@ -97,6 +97,29 @@ function get_badge_colour(key)
     if key == 'bird_returned_sacred' then return HEX("00FFFF") end
     return get_badge_colourref(key);
 end
+--Keep markings when card is enhanced
+local set_abilityref = Card.set_ability
+function Card.set_ability(self, center, initial, delay_sprites)
+    local bird_abilities = {}
+
+    if self.ability and self.playing_card then
+        for _, v in ipairs(G.bird_jokers_global_modifiers) do
+            if self.ability[v] then
+                bird_abilities[v] = true
+            end
+        end
+    end
+
+    set_abilityref(self, center, initial, delay_sprites)
+
+    if self.ability and self.playing_card then
+        for k, v in pairs(bird_abilities) do
+            if v then
+                self.ability[k] = true
+            end
+        end
+    end
+end
 local unlucky_crow = SMODS.Joker{
     key="unlucky_crow", 
     name="Unlucky Crow", 

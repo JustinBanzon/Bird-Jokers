@@ -7,7 +7,7 @@
 --- LOADER_VERSION_GEQ: 1.0.0
 ----------------------------------------------
 ------------MOD CODE -------------------------
---localization
+--- localization ---
 --Debug (if you want to edit this)
 -- _RELEASE_MODE = false
 
@@ -49,48 +49,47 @@ function SMODS.current_mod.process_loc_text()
             'by a crow person.',
         }
     }
+    G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
 end
 SMODS.Atlas{
     key = "unlucky_crow",
-    path = "j_unlucky_crow.png",
+    path = "j_bird_jokers_unlucky_crow.png",
     px = 71,
     py = 95
 }
 SMODS.Atlas{
     key = "lucky_swallow",
-    path = "j_lucky_swallow.png",
+    path = "j_bird_jokers_lucky_swallow.png",
     px = 71,
     py = 95
 }
 SMODS.Atlas{
-    key = "manzai_birds",
-    path = "j_manzai.png",
+    key = "manzai",
+    path = "j_bird_jokers_manzai.png",
     px = 71,
     py = 95
 }
 SMODS.Atlas{
     key = "crow_person",
-    path = "j_crow_person.png",
+    path = "j_bird_jokers_crow_person.png",
     px = 71,
     py = 95
 }
 SMODS.Atlas{
     key = "crow_person_true",
-    path = "j_crow_person_true.png",
+    path = "j_bird_jokers_crow_person_true.png",
     px = 71,
     py = 95
 }
--- local Wheel = SMODS.Tarot:take_ownership('wheel_of_fortune'):register()
--- crow_person_transformed = false;
--- function conditional_bark(condition,true_bark,false_bark)
---     if condition then
---         card_eval_status_text(card, 'extra', nil, nil, nil, {message = true_bark})
---     else
---         card_eval_status_text(card, 'extra', nil, nil, nil, {message = false_bark})
---     end
--- end
+SMODS.Atlas{
+    key = "phoenix",
+    path = "j_bird_jokers_phoenix.png",
+    px = 71,
+    py = 95
+}
+--- Function redefinitions ---
 local get_badge_colourref = get_badge_colour
 function get_badge_colour(key)
     if key == 'bird_sacred' then return HEX("00CCCC") end
@@ -120,8 +119,25 @@ function Card.set_ability(self, center, initial, delay_sprites)
         end
     end
 end
+local dissolve_ref = Card.start_dissolve
+function Card.start_dissolve(self, dissolve_colours, silent, dissolve_time_fac, no_juice)
+    dissolve_ref(self, dissolve_colours, silent, dissolve_time_fac, no_juice)
+    if self.ability.name == "Phoenix" and self.ability.extra.destroy_disolve then
+           G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function()
+            local new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_phoenix', nil, true, {negative = true})
+            new_card:add_to_deck()
+            G.jokers:emplace(new_card)
+            new_card:start_materialize()
+            G.GAME.joker_buffer = 0
+            return true;
+        end}))
+    end
+end
+
+--- Jokers ---
 local unlucky_crow = SMODS.Joker{
-    key="unlucky_crow", 
+    key="unlucky_crow",
+    atlas="unlucky_crow",  
     name="Unlucky Crow", 
     rarity=2, 
     unlocked=true, 
@@ -135,8 +151,10 @@ local unlucky_crow = SMODS.Joker{
     loc_txt={
         name="Unlucky Crow",
         text={
-            'This Joker has a {C:green} #3# in #4#{} chance',
-            'to gain {X:mult,C:white}X#2#{} every hand',
+            'This Joker has a',
+            '{C:green} #3# in #4#{} chance',
+            'to gain {X:mult,C:white}X#2#{} Mult',
+            'every hand',
         '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
         }},
     -- This Joker has a 1 in 4 chance
@@ -171,11 +189,11 @@ local unlucky_crow = SMODS.Joker{
                 Xmult_mod = card.ability.x_mult,
             }
         end
-    end,
-    atlas = "unlucky_crow"
+    end
 }
 local lucky_swallow = SMODS.Joker{
-    key="lucky_swallow", 
+    key="lucky_swallow",
+    atlas="lucky_swallow", 
     name="Lucky Swallow", 
     rarity=2, 
     unlocked=true, 
@@ -189,16 +207,24 @@ local lucky_swallow = SMODS.Joker{
     loc_txt={
         name="Lucky Swallow",
         text={
-            'This Joker has a {C:green}#3# in #4#{} chance',
-            'to gain {X:mult,C:white}X#2#{} every hand,',
-            'odds increase per consecutive',
-            'hand played without succeeding',
+            'This Joker has a',
+            '{C:green}#3# in #4#{} chance',
+            'to gain {X:mult,C:white}X#2#{} Mult',
+            'every hand,',
+            'odds increase per',
+            'consecutive hand',
+            'played without',
+            'succeeding',
         '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
         }},
-    -- This Joker has a 1 in 8 chance
-    -- to gain X0.25 Mult every hand,
-    -- Odds increase per consecutive 
-    -- hand played without succeeding
+    -- This Joker has a 
+    -- 1 in 8 chance
+    -- to gain X0.25 Mult
+    -- every hand,
+    -- Odds increase per
+    -- consecutive hand
+    -- played without
+    -- succeeding
     -- (Currently X1.00 Mult)
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue+1] = {set = 'Other', key = 'swallow_key', vars = {card.ability.extra.x_mult}}
@@ -230,11 +256,11 @@ local lucky_swallow = SMODS.Joker{
                 Xmult_mod = card.ability.x_mult,
             }
         end
-    end,
-    atlas = "lucky_swallow"
+    end
 }
 local manzai_birds = SMODS.Joker{
     key="manzai", 
+    atlas="manzai", 
     name="Manzai birds", 
     rarity=2, 
     unlocked=true, 
@@ -278,11 +304,11 @@ local manzai_birds = SMODS.Joker{
                         card = card
                     }
         end
-    end,
-    atlas = "manzai_birds"
+    end
 }
 local crow_person = SMODS.Joker{
     key="crow_person",
+    atlas="crow_person",
     name="Crow Person",
     rarity=1,
     unlocked=true, 
@@ -304,13 +330,6 @@ local crow_person = SMODS.Joker{
             'cards score',
             '{C:inactive}(Currently #3#/10)'
         }},
-    -- has a 1 in 2 chance 
-    -- to mark all scored cards
-    -- as sacred geometry cards, 
-    -- Transforms into its true form 
-    -- if 10 or more sacred geometry
-    -- cards score
-    -- (Currently 1/10)
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue+1] = {set = 'Other', key = 'forgiveness'}
         return {vars = {G.GAME.probabilities.normal,card.ability.extra.odds,card.ability.extra.returned_geometries}}
@@ -397,11 +416,11 @@ local crow_person = SMODS.Joker{
                 end
             end
         end
-    end,
-    atlas = "crow_person"
+    end
 }
 local true_crow = SMODS.Joker{
     key="crow_person_true",
+    atlas="crow_person_true",
     name="Crow Person (True form)",
     yes_pool_flag="crow_person_transformed",
     rarity=3,
@@ -416,13 +435,12 @@ local true_crow = SMODS.Joker{
     loc_txt={
         name="Crow Person (True Form)",
         text={
-            'Has a {C:green}#1# in #2#{} chance','to mark all scored cards',
+            'Has a {C:green}#1# in #2#{} chance',
+            'to mark all scored cards',
             'as sacred geometry cards,',
             'Scoring returned sacred geometry',
             'cards give {X:mult,C:white}X#3#{} mult'
         }},
-    -- has a 1 in 2 chance to mark all scored cards as sacred geometry cards, Scoring returned sacred geometry cards give X2 mult
-    -- Transforms into its true form 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue+1] = {set = 'Other', key = 'forgiveness'}
         return {vars = {G.GAME.probabilities.normal,card.ability.extra.odds,card.ability.extra.x_mult}}
@@ -479,11 +497,58 @@ local true_crow = SMODS.Joker{
                         }
             end
         end
-    end,
-    atlas = "crow_person_true"
+    end
 }
-
--- Credit to Joker Evolution for the code for creating cards
+local phoenix = SMODS.Joker{
+    key="phoenix",
+    atlas="phoenix", 
+    name="Phoenix", 
+    rarity=2, 
+    unlocked=true, 
+    discovered=false, 
+    blueprint_compat=true, 
+    perishable_compat=false, 
+    eternal_compat=true,
+    pos={ x = 0, y = 0 },
+    cost=6,
+    config={extra = {destroy_disolve = true}},
+    loc_txt={
+        name="Phoenix",
+        text={
+            'Prevents death',
+            'if chips scored',
+            'are at least {C:attention}80%{}',
+            'of required chips',
+            'spawns a negative copy',
+            'of itself if {C:red}destroyed'
+        }},
+    -- Prevents death if chips scored are at least 90% of required chips, spawns a negative copy of itself if destroyed
+    loc_vars = function(self, info_queue, card)
+        return {vars = nil}
+    end,
+    calculate = function(self,card, context)
+        if context.end_of_round and context.game_over and 
+        G.GAME.chips/G.GAME.blind.chips >= 0.8 then
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    G.hand_text_area.blind_chips:juice_up()
+                    G.hand_text_area.game_chips:juice_up()
+                    play_sound('tarot1')
+                    return true
+                end
+            })) 
+            return {
+                message = localize('k_saved_ex'),
+                saved = true,
+                colour = G.C.RED
+            }
+        elseif context.selling_self then
+            card.ability.extra.destroy_disolve = false
+        end
+    end
+}
+--- create_card_alt (used by some jokers) ---
+-- Credit to the creators of Joker Evolution for the code
 
 function create_card_alt(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, edition_append, forced_edition)
     local area = area or G.jokers
@@ -562,6 +627,5 @@ function create_card_alt(_type, area, legendary, _rarity, skip_materialize, soul
     end
     return card
 end
-
 ----------------------------------------------
 ------------MOD CODE END----------------------

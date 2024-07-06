@@ -49,6 +49,13 @@ function SMODS.current_mod.process_loc_text()
             'by a crow person.',
         }
     }
+    G.localization.descriptions.Other['april_fools'] = {
+        name='April fools!',
+        text = {
+            'spawns a negative',
+            'copy of itself if {C:attention}sold'
+        }
+    }
     G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
@@ -120,9 +127,10 @@ function Card.set_ability(self, center, initial, delay_sprites)
     end
 end
 local dissolve_ref = Card.start_dissolve
+local todays_date = os.date("*t",os.time())
 function Card.start_dissolve(self, dissolve_colours, silent, dissolve_time_fac, no_juice)
     dissolve_ref(self, dissolve_colours, silent, dissolve_time_fac, no_juice)
-    if self.ability.name == "Phoenix" and self.ability.extra.destroy_disolve then
+    if self.ability.name == "Phoenix" and (self.ability.extra.destroy_disolve or (todays_date.month==4 and todays_date.day==1))then
            G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function()
             local new_card = create_card_alt('Joker', G.jokers, nil, nil, nil, nil, 'j_bird_jokers_phoenix', nil, true, {negative = true})
             new_card:add_to_deck()
@@ -207,14 +215,10 @@ local lucky_swallow = SMODS.Joker{
     loc_txt={
         name="Lucky Swallow",
         text={
-            'This Joker has a',
-            '{C:green}#3# in #4#{} chance',
-            'to gain {X:mult,C:white}X#2#{} Mult',
-            'every hand,',
-            'odds increase per',
-            'consecutive hand',
-            'played without',
-            'succeeding',
+            'This Joker has a {C:green}#3# in #4#{} chance',
+            'to gain {X:mult,C:white}X#2#{} Mult every hand,',
+            'odds increase per consecutive hand',
+            'played without succeeding',
         '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
         }},
     -- This Joker has a 
@@ -524,6 +528,9 @@ local phoenix = SMODS.Joker{
         }},
     -- Prevents death if chips scored are at least 90% of required chips, spawns a negative copy of itself if destroyed
     loc_vars = function(self, info_queue, card)
+        if todays_date.month == 4 and todays_date.day == 1 then
+            info_queue[#info_queue+1] = {set = 'Other', key = 'april_fools'}
+        end
         return {vars = nil}
     end,
     calculate = function(self,card, context)

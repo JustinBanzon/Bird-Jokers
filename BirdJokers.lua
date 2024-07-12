@@ -9,7 +9,7 @@
 ------------MOD CODE -------------------------
 --- localization ---
 --Debug (if you want to edit this)
--- _RELEASE_MODE = false
+_RELEASE_MODE = false
 
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Other['crow_key'] = {
@@ -59,6 +59,10 @@ function SMODS.current_mod.process_loc_text()
     G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
+    G.bird_jokers_global_modifiers = {
+    "sacred_geometry",
+    "returned"
+    }
 end
 SMODS.Atlas{
     key = "unlucky_crow",

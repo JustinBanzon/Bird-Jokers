@@ -32,22 +32,8 @@ match_indent = false
 
 [[patches]]
 [patches.pattern]
-target = "game.lua"
-pattern = "set_profile_progress()"
-position = "before"
-payload = '''
--- Global variables stuff
-self.bird_jokers_global_modifiers = {
-    "sacred_geometry",
-    "returned"
-}
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
 target = "card.lua"
-pattern = "if self.ability.name == 'Ectoplasm' or self.ability.name == 'Hex' or pseudorandom('wheel_of_fortune') < G.GAME.probabilities.normal/self.ability.extra then" 
+pattern = "if self.ability.name == 'Ectoplasm' or self.ability.name == 'Hex' or pseudorandom('wheel_of_fortune') < G.GAME.probabilities.normal/self.ability.extra then"
 position = "after"
 payload = '''
 self.yep = true

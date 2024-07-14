@@ -5,4 +5,7 @@ A balatro mod made by **Justin** that adds five jokers that resemble birds
 # Installation
 - Download the Source Code
 - Unzip it into `AppData\Roaming\Balatro\Mods` (Create the "Mods" folder if it doens't exist)
-- Enjoy!
+- Enjoy
+# Credits
+- the creators of the [Joker Evolution](https://github.com/SDM0/Joker-Evolution) mod for the create_card_alt() function
+- [Daniel Linssen](https://managore.itch.io/) for the m3x6 and m6x11 fonts used in the joker art

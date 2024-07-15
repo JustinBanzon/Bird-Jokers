@@ -4,6 +4,7 @@
 --- PREFIX: bird_jokers
 --- MOD_AUTHOR: [Justin]
 --- MOD_DESCRIPTION: Adds a couple of custom bird Jokers
+--- BADGE_COLOR: 00CCFF
 --- LOADER_VERSION_GEQ: 1.0.0
 ----------------------------------------------
 ------------MOD CODE -------------------------
@@ -54,13 +55,6 @@ function SMODS.current_mod.process_loc_text()
         text = {
             'spawns a negative',
             'copy of itself if {C:attention}sold'
-        }
-    }
-    G.localization.descriptions.Other['debug']={
-        name='Debug',
-        text = {
-            'value given:',
-            '#1#'
         }
     }
     G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
@@ -160,6 +154,47 @@ function Card.start_dissolve(self, dissolve_colours, silent, dissolve_time_fac, 
 end
 
 --- Jokers ---
+local house_sparrow = SMODS.Joker{key="house_sparrow",
+    atlas="house_sparrow", 
+    name="House Sparrow", 
+    rarity=1, 
+    unlocked=true, 
+    discovered=true, 
+    blueprint_compat=true, 
+    perishable_compat=true, 
+    eternal_compat=true,
+    pos={ x = 0, y = 0 },
+    cost=2,
+    config={mult = 4},
+    loc_txt={
+        name="House Sparrow",
+        text={
+            '{C:mult}+#1# mult{},',
+            'Disables the effect of',
+            'the {C:attention}Ante 8 boss blind'
+        }},
+    loc_vars = function(self, info_queue, card)
+        return {vars = {card.ability.mult}}
+    end,
+    calculate = function(self, card, context)
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante % 8 == 0 then
+            G.E_MANAGER:add_event(Event({func = function()
+                G.E_MANAGER:add_event(Event({func = function()
+                    G.GAME.blind:disable()
+                    play_sound('timpani')
+                    delay(0.4)
+                    return true end }))
+                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+            return true end }))
+        end
+        if context.cardarea == G.jokers and not context.before and not context.after then
+            return {
+                message = localize{type='variable',key='a_mult',vars={card.ability.mult}},
+                mult_mod = card.ability.mult,
+            }
+        end
+    end
+    }
 local unlucky_crow = SMODS.Joker{
     key="unlucky_crow",
     atlas="unlucky_crow",  
@@ -571,48 +606,6 @@ local phoenix = SMODS.Joker{
         end
     end
 }
-local house_sparrow = SMODS.Joker{key="house_sparrow",
-    atlas="house_sparrow", 
-    name="House Sparrow", 
-    rarity=1, 
-    unlocked=true, 
-    discovered=true, 
-    blueprint_compat=true, 
-    perishable_compat=false, 
-    eternal_compat=false,
-    pos={ x = 0, y = 0 },
-    cost=2,
-    config={mult = 4},
-    loc_txt={
-        name="House Sparrow",
-        text={
-            '{C:mult}+#1# mult{},',
-            'Disables the effect of',
-            'the {C:attention}Ante 8 boss blind'
-        }},
-    loc_vars = function(self, info_queue, card)
-        info_queue[#info_queue+1] = {set="Other",key='debug',vars={ G.GAME.blind and G.GAME.blind.name or 'nil'}}
-        return {vars = {card.ability.mult}}
-    end,
-    calculate = function(self, card, context)
-        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante % 8 == 0 then
-            G.E_MANAGER:add_event(Event({func = function()
-                G.E_MANAGER:add_event(Event({func = function()
-                    G.GAME.blind:disable()
-                    play_sound('timpani')
-                    delay(0.4)
-                    return true end }))
-                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
-            return true end }))
-        end
-        if context.cardarea == G.jokers and not context.before and not context.after then
-            return {
-                message = localize{type='variable',key='a_mult',vars={card.ability.mult}},
-                mult_mod = card.ability.mult,
-            }
-        end
-    end
-    }
 --- create_card_alt (used by some jokers) ---
 -- Credit to the creators of Joker Evolution for the code
 

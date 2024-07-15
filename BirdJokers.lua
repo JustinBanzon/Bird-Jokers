@@ -56,6 +56,13 @@ function SMODS.current_mod.process_loc_text()
             'copy of itself if {C:attention}sold'
         }
     }
+    G.localization.descriptions.Other['debug']={
+        name='Debug',
+        text = {
+            'value given:',
+            '#1#'
+        }
+    }
     G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
@@ -100,6 +107,12 @@ SMODS.Atlas{
     px = 71,
     py = 95
 }
+SMODS.Atlas{
+    key = "house_sparrow",
+    path = "j_bird_jokers_house_sparrow.png",
+    px = 71,
+    py = 95
+}
 --- Function redefinitions ---
 local get_badge_colourref = get_badge_colour
 function get_badge_colour(key)
@@ -107,7 +120,7 @@ function get_badge_colour(key)
     if key == 'bird_returned_sacred' then return HEX("00FFFF") end
     return get_badge_colourref(key);
 end
---Keep markings when card is enhanced
+    --Keep markings when card is enhanced
 local set_abilityref = Card.set_ability
 function Card.set_ability(self, center, initial, delay_sprites)
     local bird_abilities = {}
@@ -515,8 +528,8 @@ local phoenix = SMODS.Joker{
     unlocked=true, 
     discovered=false, 
     blueprint_compat=true, 
-    perishable_compat=false, 
-    eternal_compat=true,
+    perishable_compat=true, 
+    eternal_compat=false,
     pos={ x = 0, y = 0 },
     cost=6,
     config={extra = {destroy_disolve = true}},
@@ -530,7 +543,7 @@ local phoenix = SMODS.Joker{
             'spawns a negative copy',
             'of itself if {C:red}destroyed'
         }},
-    -- Prevents death if chips scored are at least 90% of required chips, spawns a negative copy of itself if destroyed
+    -- Prevents death if chips scored are at least 80% of required chips, spawns a negative copy of itself if destroyed
     loc_vars = function(self, info_queue, card)
         if todays_date.month == 4 and todays_date.day == 1 then
             info_queue[#info_queue+1] = {set = 'Other', key = 'april_fools'}
@@ -558,6 +571,48 @@ local phoenix = SMODS.Joker{
         end
     end
 }
+local house_sparrow = SMODS.Joker{key="house_sparrow",
+    atlas="house_sparrow", 
+    name="House Sparrow", 
+    rarity=1, 
+    unlocked=true, 
+    discovered=true, 
+    blueprint_compat=true, 
+    perishable_compat=false, 
+    eternal_compat=false,
+    pos={ x = 0, y = 0 },
+    cost=2,
+    config={mult = 4},
+    loc_txt={
+        name="House Sparrow",
+        text={
+            '{C:mult}+#1# mult{},',
+            'Disables the effect of',
+            'the {C:attention}Ante 8 boss blind'
+        }},
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue+1] = {set="Other",key='debug',vars={ G.GAME.blind and G.GAME.blind.name or 'nil'}}
+        return {vars = {card.ability.mult}}
+    end,
+    calculate = function(self, card, context)
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante % 8 == 0 then
+            G.E_MANAGER:add_event(Event({func = function()
+                G.E_MANAGER:add_event(Event({func = function()
+                    G.GAME.blind:disable()
+                    play_sound('timpani')
+                    delay(0.4)
+                    return true end }))
+                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+            return true end }))
+        end
+        if context.cardarea == G.jokers and not context.before and not context.after then
+            return {
+                message = localize{type='variable',key='a_mult',vars={card.ability.mult}},
+                mult_mod = card.ability.mult,
+            }
+        end
+    end
+    }
 --- create_card_alt (used by some jokers) ---
 -- Credit to the creators of Joker Evolution for the code
 

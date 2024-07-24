@@ -10,7 +10,7 @@
 ------------MOD CODE -------------------------
 --- localization ---
 --Debug (if you want to edit this)
-_RELEASE_MODE = false
+--_RELEASE_MODE = false
 
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Other['crow_key'] = {
@@ -64,7 +64,200 @@ function SMODS.current_mod.process_loc_text()
     "sacred_geometry",
     "returned"
     }
+    if SMODS.Mods["JokerDisplay"] and _G["JokerDisplay"] then
+        JokerDisplay.Definitions["j_bird_jokers_house_sparrow"]={
+            text ={{ text = " +",colour = G.C.MULT },
+                { ref_table = "card.ability", ref_value = "mult",  colour = G.C.MULT }},
+            reminder_text = {
+                { text = "(", colour = G.C.UI.TEXT_INACTIVE},
+                { ref_table = "card.joker_display_values", ref_value = "active_text", colour = G.C.UI.TEXT_INACTIVE},
+                { text = ")", colour = G.C.UI.TEXT_INACTIVE},
+            },
+            calc_function = function(card)
+                local disableable = G.GAME and G.GAME.blind and G.GAME.blind.get_type and (G.GAME.blind:get_type() == 'Boss') 
+                local ante8 = G.GAME.round_resets.ante % 8 == 0
+                card.joker_display_values.active = disableable and ante8
+                card.joker_display_values.active_text = (ante8 or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "not ante 8"
+            end,
+            style_function = function(card, text, reminder_text, extra)
+                if reminder_text and reminder_text.children[2] then
+                    reminder_text.children[2].config.colour = card.joker_display_values.active and G.C.GREEN or
+                        G.C.RED
+                    reminder_text.children[2].config.scale = card.joker_display_values.active and 0.35 or 0.3
+                    return true
+                end
+                return false
+            end
+        }        
+        JokerDisplay.Definitions["j_bird_jokers_unlucky_crow"]={
+            text = {
+                {
+                    border_nodes = {
+                        { text = "X" },
+                        { ref_table = "card.ability", ref_value = "x_mult" }
+                    }
+                }
+            },
+            reminder_text = {
+                { text = "(", colour = G.C.GREEN},
+                { ref_table = "card.joker_display_values", ref_value = "odds", colour = G.C.GREEN},
+                { text = " in ", colour = G.C.GREEN},
+                { ref_table = "card.ability.extra", ref_value = "odds", colour = G.C.GREEN},
+                { text = ")", colour = G.C.GREEN},
+            },
+            calc_function = function(card)
+                card.joker_display_values.odds = G.GAME and G.GAME.probabilities.normal or 1
+            end
+        }
+        JokerDisplay.Definitions["j_bird_jokers_lucky_swallow"]={
+            text = {
+                {
+                    border_nodes = {
+                        { text = "X" },
+                        { ref_table = "card.ability", ref_value = "x_mult" }
+                    }
+                }
+            },
+            reminder_text = {
+                { text = "(", colour = G.C.GREEN},
+                { ref_table = "card.joker_display_values", ref_value = "odds_n", colour = G.C.GREEN},
+                { text = " in ", colour = G.C.GREEN},
+                { ref_table = "card.ability.extra", ref_value = "odds", colour = G.C.GREEN},
+                { text = ")", colour = G.C.GREEN},
+            },
+            calc_function = function(card)
+                card.joker_display_values.odds_n = (G.GAME and G.GAME.probabilities.normal or 1) * card.ability.extra.odds_numer
+                card.joker_display_values.odds_d = card.ability.extra.odds or 8
+            end
+        }
+        JokerDisplay.calculate_rightmost_card = function(cards)
+            if not cards or type(cards) ~= "table" then
+                return nil
+            end
+            local rightmost = cards[#cards]
+            for i = 1, #cards do
+                if cards[i].T.x > rightmost.T.x then
+                    rightmost = cards[i]
+                end
+            end
+            return rightmost
+        end
+        JokerDisplay.Definitions["j_bird_jokers_manzai"]={
+            text = {
+                { ref_table = "card.joker_display_values", ref_value = "count"},
+                { text = "x",                              scale = 0.35 },
+                {
+                    border_nodes = {
+                        { text = "X" },
+                        { ref_table = "card.ability.extra", ref_value = "x_mult" }
+                    }
+                }
+            },
+            reminder_text = {
+                { text = "(Last scored)",colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 }
+            },
+            extra = {
+                {
+                    { text = "(", colour = G.C.GREEN},
+                    { ref_table = "card.joker_display_values", ref_value = "odds", colour = G.C.GREEN},
+                    { text = " in ", colour = G.C.GREEN},
+                    { ref_table = "card.ability.extra", ref_value = "odds", colour = G.C.GREEN},
+                    { text = ")", colour = G.C.GREEN},
+                }
+            },
+            calc_function = function(card)
+                local mult_count = 0
+                local hand = next(G.play.cards) and G.play.cards or G.hand.highlighted
+                local text, _, scoring_hand = JokerDisplay.evaluate_hand(hand)
+                local last_card = JokerDisplay.calculate_rightmost_card(scoring_hand)
+                    for k, v in pairs(scoring_hand) do
+                        if v == last_card and v.facing and not (v.facing == 'back') and not v.debuff then
+                            mult_count = mult_count + JokerDisplay.calculate_card_triggers(v, not (text == 'Unknown') and scoring_hand or nil)
+                        end
+                    end
+                card.joker_display_values.count = mult_count
+                card.joker_display_values.odds = G.GAME and G.GAME.probabilities.normal or 1
+            end,
+            retrigger_function = function(playing_card, scoring_hand, held_in_hand, joker_card)
+                local last_card = scoring_hand and JokerDisplay.calculate_rightmost_card(scoring_hand)
+                return last_card and playing_card == last_card and 1 or 0
+            end
+        }
+        JokerDisplay.Definitions["j_bird_jokers_crow_person"]={
+        text={                { text = "(", colour = G.C.GREEN},
+            { ref_table = "card.joker_display_values", ref_value = "odds", colour = G.C.GREEN},
+            { text = " in ", colour = G.C.GREEN},
+            { ref_table = "card.ability.extra", ref_value = "odds", colour = G.C.GREEN},
+            { text = ")", colour = G.C.GREEN},
+            { text = " (marking)", colour = G.C.UI.TEXT_INACTIVE}
+        },
+        reminder_text={
+            { text = "(",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.35 },
+            { ref_table = "card.joker_display_values", ref_value = "count",         colour = G.C.UI.TEXT_INACTIVE, scale = 0.35 },
+            { text = ")",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.35 },
+        },
+        calc_function = function(card)
+            card.joker_display_values.count = (card.ability.extra.returned_geometries .. "/" .. 10)
+            card.joker_display_values.odds = G.GAME and G.GAME.probabilities.normal or 1
+        end
+        }
+        JokerDisplay.Definitions["j_bird_jokers_crow_person_true"]={
+            text = {
+                { ref_table = "card.joker_display_values", ref_value = "count" },
+                { text = "x",                              scale = 0.35 },
+                {
+                    border_nodes = {
+                        { text = "X" },
+                        { ref_table = "card.ability.extra", ref_value = "x_mult" }
+                    }
+                }
+            },
+            reminder_text = {
+                { text = "(Returned Geometries)",colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 }
+            },
+            extra = {
+                {
+                    { text = "(",colour = G.C.GREEN},
+                    { ref_table = "card.joker_display_values", ref_value = "odds",colour = G.C.GREEN},
+                    { text = " in ",colour = G.C.GREEN},
+                    { ref_table = "card.ability.extra", ref_value = "odds",colour = G.C.GREEN},
+                    { text = ")"},
+                    { text = " (marking)", colour = G.C.UI.TEXT_INACTIVE}
+                }
+            },
+            extra_config = {scale = 0.3 },
+        calc_function = function(card)
+            local mult_count = 0
+            local hand = next(G.play.cards) and G.play.cards or G.hand.highlighted
+            local text, _, scoring_hand = JokerDisplay.evaluate_hand(hand)
+                for k, v in pairs(scoring_hand) do
+                    if v.facing and not (v.facing == 'back') and not v.debuff and v.ability.returned then
+                        mult_count = mult_count  + JokerDisplay.calculate_card_triggers(v, not (text == 'Unknown') and scoring_hand or nil)
+                    end
+                end
+            card.joker_display_values.count = mult_count
+            card.joker_display_values.odds = G.GAME and G.GAME.probabilities.normal or 1
+        end
+        }
+        JokerDisplay.Definitions["j_bird_jokers_phoenix"]={
+            reminder_text = {
+            { text = "(",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+            { ref_table = "card.joker_display_values", ref_value = "active",         colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+            { text = ")",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+        },
+        calc_function = function(card)
+            card.joker_display_values.active = (G.GAME and G.GAME.chips and G.GAME.blind.chips and
+                G.GAME.chips / G.GAME.blind.chips >= 0.8) and localize("k_active_ex") or "Inactive"
+        end
+        }
+    end
 end
+SMODS.Atlas({
+   key = "modicon",
+   path = "bird_jokers_tag.png",
+   px = 32,
+   py = 32
+ })
 SMODS.Atlas{
     key = "unlucky_crow",
     path = "j_bird_jokers_unlucky_crow.png",

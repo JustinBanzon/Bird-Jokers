@@ -64,6 +64,7 @@ function SMODS.current_mod.process_loc_text()
     "sacred_geometry",
     "returned"
     }
+    if not to_big then function to_big(x) return x end end
     if SMODS.Mods["JokerDisplay"] and _G["JokerDisplay"] then
         JokerDisplay.Definitions["j_bird_jokers_house_sparrow"]={
             text ={{ text = " +",colour = G.C.MULT },
@@ -246,8 +247,13 @@ function SMODS.current_mod.process_loc_text()
             { text = ")",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
         },
         calc_function = function(card)
-            card.joker_display_values.active = (G.GAME and G.GAME.chips and G.GAME.blind.chips and
+            if to_big then
+                card.joker_display_values.active = (to_big(G.GAME.chips) / to_big(G.GAME.blind.chips) >= to_big(0.8)) and localize("k_active_ex") or "Inactive"
+           
+            else
+                card.joker_display_values.active = (G.GAME and G.GAME.chips and G.GAME.blind.chips and
                 G.GAME.chips / G.GAME.blind.chips >= 0.8) and localize("k_active_ex") or "Inactive"
+            end
         end
         }
     end
@@ -779,8 +785,11 @@ local phoenix = SMODS.Joker{
         return {vars = nil}
     end,
     calculate = function(self,card, context)
+        local scored = to_big and to_big(G.GAME.chips) or G.GAME.chips
+        local required = to_big and to_big(G.GAME.blind.chips) or G.GAME.blind.chips
+        local save_factor = to_big and to_big(0.8) or 0.8
         if context.end_of_round and context.game_over and 
-        G.GAME.chips/G.GAME.blind.chips >= 0.8 then
+        scored/required >= save_factor then
             G.E_MANAGER:add_event(Event({
                 func = function()
                     G.hand_text_area.blind_chips:juice_up()

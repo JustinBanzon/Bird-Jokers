@@ -373,7 +373,6 @@ return {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.1, colour = 
             {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
                 { n = G.UIT.T, config = { text = "custom sound effects", scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
             }}
-            }},
         }},
     }}
 end

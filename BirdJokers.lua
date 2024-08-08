@@ -57,7 +57,7 @@ function SMODS.current_mod.process_loc_text()
             'copy of itself if {C:attention}sold'
         }
     }
-    G.localization.misc.dictionary.ph_mr_bones = "Saved by a Joker"
+    G.localization.misc.dictionary.ph_mr_bones = "Done gambling"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
     G.bird_jokers_global_modifiers = {
@@ -180,7 +180,7 @@ function SMODS.current_mod.process_loc_text()
                 card.joker_display_values.odds = G.GAME and G.GAME.probabilities.normal or 1
             end,
             retrigger_function = function(playing_card, scoring_hand, held_in_hand, joker_card)
-                local last_card = scoring_hand and JokerDisplay.calculate_rightmost_card(scoring_hand)
+                local last_card = scoring_hand and JokerDisplay.calculate_rightmost_card(scoring_hand) or nil
                 return last_card and playing_card == last_card and 1 or 0
             end
         }
@@ -222,7 +222,7 @@ function SMODS.current_mod.process_loc_text()
                     { ref_table = "card.joker_display_values", ref_value = "odds",colour = G.C.GREEN},
                     { text = " in ",colour = G.C.GREEN},
                     { ref_table = "card.ability.extra", ref_value = "odds",colour = G.C.GREEN},
-                    { text = ")"},
+                    { text = ")",colour = G.C.GREEN},
                     { text = " (marking)", colour = G.C.UI.TEXT_INACTIVE}
                 }
             },
@@ -306,6 +306,19 @@ SMODS.Atlas{
     px = 71,
     py = 95
 }
+local donaiyanen = SMODS.Sound({
+    key = "manzai_donaiyanen",
+    path = "donaiyanen_hit.ogg"
+})
+local aw_dang = SMODS.Sound({
+    key = "unlucky_dangit",
+    path = "gamblecore_aw_dangit.wav"
+})
+local hai_hai = SMODS.Sound({
+    key = "manzai_hai_hai",
+    path = "hai_hai.ogg"
+})
+local config = SMODS.current_mod.config
 --- Function redefinitions ---
 local get_badge_colourref = get_badge_colour
 function get_badge_colour(key)
@@ -351,7 +364,19 @@ function Card.start_dissolve(self, dissolve_colours, silent, dissolve_time_fac, 
         end}))
     end
 end
-
+SMODS.current_mod.config_tab = function()
+return {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.1, colour = G.C.BLACK, minw = 8, minh = 6}, nodes = {
+        {n = G.UIT.R, config = {align = "cl", padding = 0}, nodes = {
+            {n = G.UIT.C, config = { align = "cl", padding = 0.05 }, nodes = {
+                create_toggle{ col = true, label = "", scale = 0.85, w = 0, shadow = true, ref_table = config, ref_value = "custom_sounds" },
+            }},
+            {n = G.UIT.C, config = { align = "c", padding = 0 }, nodes = {
+                { n = G.UIT.T, config = { text = "custom sound effects", scale = 0.35, colour = G.C.UI.TEXT_LIGHT }},
+            }}
+            }},
+        }},
+    }}
+end
 --- Jokers ---
 local house_sparrow = SMODS.Joker{key="house_sparrow",
     atlas="house_sparrow", 
@@ -435,10 +460,18 @@ local unlucky_crow = SMODS.Joker{
             if context.cardarea == G.jokers and context.before then
                 if (pseudorandom('unlucky_crow') < G.GAME.probabilities.normal/card.ability.extra.odds) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
                 else
                     -- card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_xmult',vars={card.ability.x_mult}}})
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_nope_ex')})
+                    if config.custom_sounds then
+                        G.E_MANAGER:add_event(Event({
+                            func = function()
+                                aw_dang:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true);
+                                return true
+                            end
+                        }))
+                    end
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = "aw dangit!", colour=G.C.BLUE})
                 end
             end
         end
@@ -496,12 +529,15 @@ local lucky_swallow = SMODS.Joker{
             end
             if context.cardarea == G.jokers and context.before then
                 if (pseudorandom('lucky_swallow') < G.GAME.probabilities.normal*card.ability.extra.odds_numer/card.ability.extra.odds) then
-                    card.ability.extra.odds_numer = 1
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
+                    if (card.ability.extra.odds_numer > 1) then
+                        card.ability.extra.odds_numer = 1
+                        card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_reset'),colour = G.C.GREEN}) 
+                    end
                 else
                     card.ability.extra.odds_numer = card.ability.extra.odds_numer + 1
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds)})
+                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour =  G.C.GREEN})
                 end
             end
         end
@@ -550,14 +586,34 @@ local manzai_birds = SMODS.Joker{
                 card = card
             }
         end
-        if context.individual and pseudorandom('manzai') < G.GAME.probabilities.normal/card.ability.extra.odds 
+        if context.individual
             and context.cardarea == G.play
             and context.other_card == context.scoring_hand[#(context.scoring_hand)] then
-            return {
+            local donaiyanen_trigger = pseudorandom('manzai') < G.GAME.probabilities.normal/card.ability.extra.odds 
+            if config.custom_sounds then
+                if donaiyanen_trigger then
+                    G.E_MANAGER:add_event(Event({
+                        func = function()
+                            donaiyanen:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true);
+                            return true
+                        end
+                    }))
+                else
+                    G.E_MANAGER:add_event(Event({
+                        func = function()
+                            hai_hai:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true);
+                            return true
+                        end
+                    }))
+                end
+            end
+            if donaiyanen_trigger then
+                return {
                         x_mult = card.ability.extra.x_mult,
                         colour = G.C.RED,
                         card = card
-                    }
+                }
+            end
         end
     end
 }
@@ -779,7 +835,7 @@ local phoenix = SMODS.Joker{
         }},
     -- Prevents death if chips scored are at least 80% of required chips, spawns a negative copy of itself if destroyed
     loc_vars = function(self, info_queue, card)
-        if todays_date.month == 4 and todays_date.day == 1 then
+        if config.april_fools_test or (todays_date.month==4 and todays_date.day==1) then
             info_queue[#info_queue+1] = {set = 'Other', key = 'april_fools'}
         end
         return {vars = nil}
@@ -806,7 +862,7 @@ local phoenix = SMODS.Joker{
         elseif context.selling_self then
             card.ability.extra.destroy_disolve = false
         end
-    end
+    end,
 }
 --- create_card_alt (used by some jokers) ---
 -- Credit to the creators of Joker Evolution for the code

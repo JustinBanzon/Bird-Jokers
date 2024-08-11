@@ -77,9 +77,9 @@ function SMODS.current_mod.process_loc_text()
             calc_function = function(card)
                 local disableable = G.GAME and G.GAME.blind and G.GAME.blind.get_type and (G.GAME.blind:get_type() == 'Boss') 
                 local next_showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
-                local showdown_enabled = disableable and G.GAME.blind.showdown
+                local showdown_enabled = G.GAME.round_resets.ante and G.GAME.round_resets.ante%G.GAME.win_ante == 0
                 card.joker_display_values.active = disableable and showdown_enabled
-                card.joker_display_values.active_text = (ante8 or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "showdown ante "..next_showdown
+                card.joker_display_values.active_text = (showdown_enabled or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "not ante "..next_showdown
             end,
             style_function = function(card, text, reminder_text, extra)
                 if reminder_text and reminder_text.children[2] then
@@ -402,7 +402,7 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
         return {vars = {card.ability.mult,showdown}}
     end,
     calculate = function(self, card, context)
-        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and context.blind.boss.showdown then
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante and G.GAME.round_resets.ante%G.GAME.win_ante == 0 then
             G.E_MANAGER:add_event(Event({func = function()
                 G.E_MANAGER:add_event(Event({func = function()
                     G.GAME.blind:disable()

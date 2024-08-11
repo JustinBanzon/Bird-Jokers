@@ -76,9 +76,10 @@ function SMODS.current_mod.process_loc_text()
             },
             calc_function = function(card)
                 local disableable = G.GAME and G.GAME.blind and G.GAME.blind.get_type and (G.GAME.blind:get_type() == 'Boss') 
-                local ante8 = G.GAME.round_resets.ante % 8 == 0
-                card.joker_display_values.active = disableable and ante8
-                card.joker_display_values.active_text = (ante8 or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "not ante 8"
+                local next_showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
+                local showdown_enabled = disableable and G.GAME.blind.showdown
+                card.joker_display_values.active = disableable and showdown_enabled
+                card.joker_display_values.active_text = (ante8 or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "showdown ante "..next_showdown
             end,
             style_function = function(card, text, reminder_text, extra)
                 if reminder_text and reminder_text.children[2] then
@@ -394,13 +395,14 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
         text={
             '{C:mult}+#1# mult{},',
             'Disables the effect of',
-            'the {C:attention}Ante 8 boss blind'
+            'the {C:attention}Ante #2# boss blind'
         }},
     loc_vars = function(self, info_queue, card)
-        return {vars = {card.ability.mult}}
+        local showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
+        return {vars = {card.ability.mult,showdown}}
     end,
     calculate = function(self, card, context)
-        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante % 8 == 0 then
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and context.blind.boss.showdown then
             G.E_MANAGER:add_event(Event({func = function()
                 G.E_MANAGER:add_event(Event({func = function()
                     G.GAME.blind:disable()

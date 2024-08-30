@@ -17,14 +17,16 @@ function SMODS.current_mod.process_loc_text()
         name = 'Unfortunate bird',
         text = {
             'gains {X:mult,C:white}X#1#{} Mult when',
-            'Wheel of Fortune says "'..localize("k_nope_ex")..'"'
+            'Wheel of Fortune',
+            'says "'..localize("k_nope_ex")..'"'
         }
     }
     G.localization.descriptions.Other['swallow_key'] = {
         name = 'Fortunate bird',
         text = {
             'gains {X:mult,C:white}X#1#{} Mult when',
-            'Wheel of Fortune gives an edition'
+            'Wheel of Fortune',
+            'gives an edition'
         }
     }
     G.localization.descriptions.Other['forgiveness'] = {
@@ -64,7 +66,6 @@ function SMODS.current_mod.process_loc_text()
     "sacred_geometry",
     "returned"
     }
-    if not to_big then function to_big(x) return x end end
     if SMODS.Mods["JokerDisplay"] and _G["JokerDisplay"] then
         JokerDisplay.Definitions["j_bird_jokers_house_sparrow"]={
             text ={{ text = " +",colour = G.C.MULT },
@@ -79,11 +80,12 @@ function SMODS.current_mod.process_loc_text()
                 local next_showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
                 local showdown_enabled = G.GAME.round_resets.ante and G.GAME.round_resets.ante%G.GAME.win_ante == 0
                 card.joker_display_values.active = disableable and showdown_enabled
-                card.joker_display_values.active_text = (showdown_enabled or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "not ante "..next_showdown
+                card.joker_display_values.maybe_active = disableable
+                card.joker_display_values.active_text = (showdown_enabled or not disableable) and localize(disableable and 'k_active' or 'ph_no_boss_active') or "May be active"
             end,
             style_function = function(card, text, reminder_text, extra)
                 if reminder_text and reminder_text.children[2] then
-                    reminder_text.children[2].config.colour = card.joker_display_values.active and G.C.GREEN or
+                    reminder_text.children[2].config.colour = card.joker_display_values.active and G.C.GREEN or card.joker_display_values.maybe_active and G.C.YELLOW or
                         G.C.RED
                     reminder_text.children[2].config.scale = card.joker_display_values.active and 0.35 or 0.3
                     return true
@@ -257,6 +259,22 @@ function SMODS.current_mod.process_loc_text()
             end
         end
         }
+        JokerDisplay.Definitions["j_bird_jokers_hummingbird_nerd"]={
+            reminder_text = {
+            { text = "(",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+            { ref_table = "card.joker_display_values", ref_value = "active",         colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+            { text = ")",                              colour = G.C.UI.TEXT_INACTIVE, scale = 0.3 },
+        },
+        calc_function = function(card)
+            if to_big then
+                card.joker_display_values.active = (to_big(G.GAME.chips) / to_big(G.GAME.blind.chips) >= to_big(0.01*card.ability.extra.percentage)) and localize("k_active_ex") or "Inactive"
+           
+            else
+                card.joker_display_values.active = (G.GAME and G.GAME.chips and G.GAME.blind.chips and
+                G.GAME.chips / G.GAME.blind.chips >= (0.01*card.ability.extra.percentage)) and localize("k_active_ex") or "Inactive"
+            end
+        end
+        }
     end
 end
 SMODS.Atlas({
@@ -304,6 +322,12 @@ SMODS.Atlas{
 SMODS.Atlas{
     key = "house_sparrow",
     path = "j_bird_jokers_house_sparrow.png",
+    px = 71,
+    py = 95
+}
+SMODS.Atlas{
+    key = "hummingbird_nerd",
+    path = "hummingbird_nerd.png",
     px = 71,
     py = 95
 }
@@ -395,14 +419,14 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
         text={
             '{C:mult}+#1# mult{},',
             'Disables the effect of',
-            'the {C:attention}Ante #2# boss blind'
+            'all {C:attention}Showdown blinds'
         }},
     loc_vars = function(self, info_queue, card)
         local showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
         return {vars = {card.ability.mult,showdown}}
     end,
     calculate = function(self, card, context)
-        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante and G.GAME.round_resets.ante%G.GAME.win_ante == 0 then
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante and (context.blind.boss.showdown or G.GAME.round_resets.ante%G.GAME.win_ante == 0) then
             G.E_MANAGER:add_event(Event({func = function()
                 G.E_MANAGER:add_event(Event({func = function()
                     G.GAME.blind:disable()
@@ -822,7 +846,7 @@ local phoenix = SMODS.Joker{
     perishable_compat=true, 
     eternal_compat=false,
     pos={ x = 0, y = 0 },
-    cost=6,
+    cost=4,
     config={extra = {destroy_disolve = true}},
     loc_txt={
         name="Phoenix",
@@ -864,6 +888,90 @@ local phoenix = SMODS.Joker{
             card.ability.extra.destroy_disolve = false
         end
     end,
+}
+local humingbird_nerd = SMODS.Joker{
+    key="hummingbird_nerd",
+    atlas="hummingbird_nerd", 
+    name="Hummingbird Nerd", 
+    rarity=2, 
+    unlocked=true, 
+    discovered=false, 
+    blueprint_compat=true, 
+    perishable_compat=true, 
+    eternal_compat=false,
+    pos={ x = 0, y = 0 },
+    cost=6,
+    config={extra = {percentage = 25,update_flag = false}},
+    loc_txt={
+        name="Hummingbird Nerd",
+        text={
+            'Immediately ends',
+            'round if chips',
+            'scored are at least',
+            '{C:attention}#1#%{} of required chips,',
+            'percentage increases',
+            'by {C:attention}25%{} per hand and',
+            'can\'t go over {C:attention}90%{}',
+        }},
+    -- Immediately ends 
+    -- round if chips 
+    -- scored are at least 
+    -- 80% of required chips,
+    -- percentage increases
+    -- by 25% per hand and
+    -- can't go over 80%
+    loc_vars = function(self, info_queue, card)
+        return {vars = {card.ability.extra.percentage}}
+    end,
+    calculate = function(self,card, context)
+        local scored = to_big and to_big(G.GAME.chips) or G.GAME.chips
+        local required = to_big and to_big(G.GAME.blind.chips) or G.GAME.blind.chips
+        local premature_end = to_big and to_big(card.ability.extra.percentage*0.01) or card.ability.extra.percentage*0.01
+        --G.GAME.current_round.hands_played
+        if context.after then
+            card.ability.extra.update_flag = true
+        end
+        if context.end_of_round then
+            card.ability.extra.percentage = 25
+            if context.game_over and scored/required > premature_end then
+                G.E_MANAGER:add_event(Event({
+                    func = function()
+                        G.hand_text_area.blind_chips:juice_up()
+                        G.hand_text_area.game_chips:juice_up()
+                        play_sound('tarot1')
+                        return true
+                    end
+                })) 
+                return {
+                    message = 'Done!',
+                    saved = true,
+                    colour = G.C.RED
+                }
+            end
+        end
+    end,
+    update = function(self, card, dt)
+        if card.area == G.jokers and G.STAGE == G.STAGES.RUN and G.STATE == G.STATES.SELECTING_HAND and not card.debuff and card.ability.extra.update_flag then
+            local scored = to_big and to_big(G.GAME.chips) or G.GAME.chips
+            local required = to_big and to_big(G.GAME.blind.chips) or G.GAME.blind.chips
+            local premature_end = to_big and to_big(card.ability.extra.percentage*0.01) or card.ability.extra.percentage*0.01
+            card.ability.extra.update_flag = false
+            if scored/required > premature_end and scored < required then
+                G.STATE = G.STATES.HAND_PLAYED
+                G.STATE_COMPLETE = true
+                if G.GAME.current_round.hands_left <= 0 then 
+                    G.GAME.current_round.hands_left = 0
+                end
+                end_round()
+            elseif scored < required then
+                if card.ability.extra.percentage + 25 < 90 then
+                    card.ability.extra.percentage = card.ability.extra.percentage + 25
+                else
+                    card.ability.extra.percentage = 90
+                end
+            end
+        end
+    end
 }
 --- create_card_alt (used by some jokers) ---
 -- Credit to the creators of Joker Evolution for the code

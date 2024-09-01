@@ -339,6 +339,14 @@ local aw_dang = SMODS.Sound({
     key = "unlucky_dangit",
     path = "gamblecore_aw_dangit.wav"
 })
+local winning = SMODS.Sound({
+    key = "lucky_winnning",
+    path = "gamblecore_winning.wav"
+})
+local done_gambling = SMODS.Sound({
+    key = "hummingbird_done",
+    path = "gamblecore_done.wav"
+})
 local hai_hai = SMODS.Sound({
     key = "manzai_hai_hai",
     path = "hai_hai.ogg"
@@ -491,12 +499,13 @@ local unlucky_crow = SMODS.Joker{
                     if config.custom_sounds then
                         G.E_MANAGER:add_event(Event({
                             func = function()
-                                aw_dang:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true);
+                                aw_dang:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true)
+                                card:juice_up()
                                 return true
                             end
                         }))
+                        delay(1)
                     end
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = "aw dangit!", colour=G.C.BLUE})
                 end
             end
         end
@@ -555,10 +564,16 @@ local lucky_swallow = SMODS.Joker{
             if context.cardarea == G.jokers and context.before then
                 if (pseudorandom('lucky_swallow') < G.GAME.probabilities.normal*card.ability.extra.odds_numer/card.ability.extra.odds) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
+                    G.E_MANAGER:add_event(Event({
+                        func = function()
+                            winning:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true);
+                            return true
+                        end
+                    }))
                     card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
                     if (card.ability.extra.odds_numer > 1) then
                         card.ability.extra.odds_numer = 1
-                        card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_reset'),colour = G.C.GREEN}) 
+                        card_eval_status_text(card, 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour = G.C.GREEN}) 
                     end
                 else
                     card.ability.extra.odds_numer = card.ability.extra.odds_numer + 1
@@ -957,6 +972,7 @@ local humingbird_nerd = SMODS.Joker{
             local premature_end = to_big and to_big(card.ability.extra.percentage*0.01) or card.ability.extra.percentage*0.01
             card.ability.extra.update_flag = false
             if scored/required > premature_end and scored < required then
+                done_gambling:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true)
                 G.STATE = G.STATES.HAND_PLAYED
                 G.STATE_COMPLETE = true
                 if G.GAME.current_round.hands_left <= 0 then 

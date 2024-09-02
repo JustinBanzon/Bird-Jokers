@@ -9,9 +9,12 @@
 ----------------------------------------------
 ------------MOD CODE -------------------------
 --- localization ---
---Debug (if you want to edit this)
---_RELEASE_MODE = false
-
+SMODS.Atlas({
+key = "BirdStickers",
+path = "BirdStickers.png",
+px = 71,
+py = 95
+})
 function SMODS.current_mod.process_loc_text()
     G.localization.descriptions.Other['crow_key'] = {
         name = 'Unfortunate bird',
@@ -351,6 +354,7 @@ local hai_hai = SMODS.Sound({
     key = "manzai_hai_hai",
     path = "hai_hai.ogg"
 })
+
 local config = SMODS.current_mod.config
 --- Function redefinitions ---
 local get_badge_colourref = get_badge_colour

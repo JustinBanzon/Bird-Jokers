@@ -137,17 +137,19 @@ function SMODS.current_mod.process_loc_text()
                 card.joker_display_values.odds_d = card.ability.extra.odds or 8
             end
         }
-        JokerDisplay.calculate_rightmost_card = function(cards)
-            if not cards or type(cards) ~= "table" then
-                return nil
-            end
-            local rightmost = cards[#cards]
-            for i = 1, #cards do
-                if cards[i].T.x > rightmost.T.x then
-                    rightmost = cards[i]
+        if not JokerDisplay.calculate_rightmost_card then
+            JokerDisplay.calculate_rightmost_card = function(cards)
+                if not cards or type(cards) ~= "table" then
+                    return nil
                 end
+                local rightmost = cards[#cards]
+                for i = 1, #cards do
+                    if cards[i].T.x > rightmost.T.x then
+                        rightmost = cards[i]
+                    end
+                end
+                return rightmost
             end
-            return rightmost
         end
         JokerDisplay.Definitions["j_bird_jokers_manzai"]={
             text = {
@@ -278,6 +280,14 @@ function SMODS.current_mod.process_loc_text()
             end
         end
         }
+        JokerDisplay.Definitions["j_bird_jokers_wren"]={
+            retrigger_function = function(playing_card, scoring_hand, held_in_hand, joker_card)
+                local first_card = scoring_hand and JokerDisplay.calculate_leftmost_card(scoring_hand) or nil
+                local last_card = scoring_hand and JokerDisplay.calculate_rightmost_card(scoring_hand) or nil
+                local _, _, scoring_hand = JokerDisplay.evaluate_hand()
+                return ((last_card and playing_card == last_card) or (first_card and playing_card == first_card)) and ((#scoring_hand>=4 or #scoring_hand==1) and 2 or 1) * JokerDisplay.calculate_joker_triggers(joker_card) or 0
+            end
+        }    
     end
 end
 SMODS.Atlas({
@@ -331,6 +341,12 @@ SMODS.Atlas{
 SMODS.Atlas{
     key = "hummingbird_nerd",
     path = "hummingbird_nerd.png",
+    px = 71,
+    py = 95
+}
+SMODS.Atlas{
+    key = "wren",
+    path = "j_bird_jokers_wren.png",
     px = 71,
     py = 95
 }
@@ -438,15 +454,20 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
         return {vars = {card.ability.mult,showdown}}
     end,
     calculate = function(self, card, context)
-        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss and G.GAME.round_resets.ante and (context.blind.boss.showdown or G.GAME.round_resets.ante%G.GAME.win_ante == 0) then
-            G.E_MANAGER:add_event(Event({func = function()
+        if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss then
+            if (G.GAME.round_resets.ante and  G.GAME.round_resets.ante%G.GAME.win_ante == 0) or context.blind.boss.showdown then
                 G.E_MANAGER:add_event(Event({func = function()
-                    G.GAME.blind:disable()
-                    play_sound('timpani')
-                    delay(0.4)
-                    return true end }))
-                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
-            return true end }))
+                    G.E_MANAGER:add_event(Event({func = function()
+                        G.GAME.blind:disable()
+                        play_sound('timpani')
+                        delay(0.4)
+                        return true end }))
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+                return true end }))
+            else
+                 card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, 
+                    {message = ((G.GAME.round_resets.ante~=nil) and G.GAME.round_resets.ante..'/'..G.GAME.win_ante) or "nil"})
+            end
         end
         if context.cardarea == G.jokers and not context.before and not context.after then
             return {
@@ -490,16 +511,16 @@ local unlucky_crow = SMODS.Joker{
             if context.consumeable then
                 if context.consumeable.ability.name =='The Wheel of Fortune' and not(context.consumeable.yep) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
                     return true
                 end
             end
             if context.cardarea == G.jokers and context.before then
                 if (pseudorandom('unlucky_crow') < G.GAME.probabilities.normal/card.ability.extra.odds) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
                 else
-                    -- card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_xmult',vars={card.ability.x_mult}}})
+                    -- card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize{type='variable',key='a_xmult',vars={card.ability.x_mult}}})
                     if config.custom_sounds then
                         G.E_MANAGER:add_event(Event({
                             func = function()
@@ -561,7 +582,7 @@ local lucky_swallow = SMODS.Joker{
             if context.consumeable then
                 if context.consumeable.ability.name =='The Wheel of Fortune' and context.consumeable.yep then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
                     return true
                 end
             end
@@ -574,14 +595,14 @@ local lucky_swallow = SMODS.Joker{
                             return true
                         end
                     }))
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
                     if (card.ability.extra.odds_numer > 1) then
                         card.ability.extra.odds_numer = 1
-                        card_eval_status_text(card, 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour = G.C.GREEN}) 
+                        card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour = G.C.GREEN}) 
                     end
                 else
                     card.ability.extra.odds_numer = card.ability.extra.odds_numer + 1
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour =  G.C.GREEN})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour =  G.C.GREEN})
                 end
             end
         end
@@ -710,7 +731,7 @@ local crow_person = SMODS.Joker{
             if returning then
                 card:juice_up()
                 if card.ability.extra.returned_geometries < 10 then
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = (card.ability.extra.returned_geometries..'/'..10)})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = (card.ability.extra.returned_geometries..'/'..10)})
                 else
                     local transfer_edition = card.edition or nil
                     G.E_MANAGER:add_event(Event({
@@ -767,7 +788,7 @@ local crow_person = SMODS.Joker{
                 end
                 if marking then
                     card:juice_up()
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ("Marked!")})
                 end
             end
         end
@@ -819,7 +840,7 @@ local true_crow = SMODS.Joker{
             end
             if returning then
                 card:juice_up()
-                card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("returned!")})
+                card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ("returned!")})
             end
             if pseudorandom('crow_person') < G.GAME.probabilities.normal/card.ability.extra.odds then
                 local marking = false
@@ -839,7 +860,7 @@ local true_crow = SMODS.Joker{
                 end
                 if marking then
                     card:juice_up()
-                    card_eval_status_text(card, 'extra', nil, nil, nil, {message = ("Marked!")})
+                    card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ("Marked!")})
                 end
             end
         end
@@ -917,7 +938,7 @@ local humingbird_nerd = SMODS.Joker{
     discovered=false, 
     blueprint_compat=true, 
     perishable_compat=true, 
-    eternal_compat=false,
+    eternal_compat=true,
     pos={ x = 0, y = 0 },
     cost=6,
     config={extra = {percentage = 25,update_flag = false}},
@@ -938,7 +959,7 @@ local humingbird_nerd = SMODS.Joker{
     -- 80% of required chips,
     -- percentage increases
     -- by 25% per hand and
-    -- can't go over 80%
+    -- can't go over 90%
     loc_vars = function(self, info_queue, card)
         return {vars = {card.ability.extra.percentage}}
     end,
@@ -992,7 +1013,84 @@ local humingbird_nerd = SMODS.Joker{
             end
         end
     end
+} 
+local wren = SMODS.Joker{
+    key = "wren",
+    atlas = "wren",
+    name = "Wren (Bits and Bops)",
+    rarity=1, 
+    unlocked=true, 
+    discovered=false, 
+    blueprint_compat=true, 
+    perishable_compat=true, 
+    eternal_compat=false,
+    pos={ x = 0, y = 0 },
+    cost=6,
+    config= {extra = 1},
+    loc_txt={
+        name="Wren (Bits and Bops)",
+        text={
+            'retrigger the first and last',
+            'cards used in scoring,',
+            'retrigger them twice if',
+            'scoring hand contains',
+            '{C:attention}4{} or more cards.',
+        }},
+    calculate = function(self,card, context)
+        if context.repetition and context.cardarea == G.play then
+            card.ability.extra = (#context.scoring_hand >=4 or #context.scoring_hand == 1) and 2 or 1
+            if (context.other_card == context.scoring_hand[1] or context.other_card == context.scoring_hand[#(context.scoring_hand)] ) then
+                return {
+                    message = localize('k_again_ex'),
+                    repetitions = card.ability.extra,
+                    card = card
+                }
+            end
+        end
+    end
 }
+-- chal = {
+--     name = 'Unfavored Underside',
+--     key = 'unfavored',
+
+--     loc_txt = {
+--          ['en-us'] = {name = 'Unfavored Underside'},
+--     },
+--     rules = {
+--         custom = {
+--         },
+--         modifiers = {
+--         }
+--     },
+--     vouchers = {
+--     },
+--     deck = {
+--         cards = {
+--             {s='S', r='4',e='m_wild'},{s='S', r='4',e='m_wild'},{s='S', r='4',e='m_gold'},{s='S', r='4',e='m_gold'},
+--             {s='S', r='T',e='m_wild'},{s='S', r='T',e='m_wild'},{s='S', r='T',e='m_gold'},{s='S', r='T',e='m_gold'},
+--             {s='H', r='4',e='m_wild'},{s='H', r='4',e='m_wild'},{s='H', r='4',e='m_gold'},{s='H', r='4',e='m_gold'},
+--             {s='C', r='4',e='m_wild'},{s='C', r='4',e='m_wild'},{s='C', r='4',e='m_gold'},{s='C', r='4',e='m_gold'},
+--             {s='C', r='9',e='m_wild'},{s='C', r='9',e='m_wild'},{s='C', r='9',e='m_gold'},{s='C', r='9',e='m_gold'},
+--             {s='C', r='9',e='m_wild'},{s='C', r='9',e='m_wild'},{s='C', r='9',e='m_gold'},{s='C', r='9',e='m_gold'},
+--             {s='C', r='T',e='m_wild'},{s='C', r='T',e='m_wild'},{s='C', r='T',e='m_gold'},{s='C', r='T',e='m_gold'},
+--             {s='D', r='5',e='m_wild'},{s='D', r='5',e='m_wild'},{s='D', r='5',e='m_gold'},{s='D', r='5',e='m_gold'},
+--             {s='D', r='6',e='m_wild'},{s='D', r='6',e='m_wild'},{s='D', r='6',e='m_gold'},{s='D', r='6',e='m_gold'},
+--             {s='D', r='8',e='m_wild'},{s='D', r='8',e='m_wild'},{s='D', r='8',e='m_gold'},{s='D', r='8',e='m_gold'},
+--             {s='D', r='9',e='m_wild'},{s='D', r='9',e='m_wild'},{s='D', r='9',e='m_gold'},{s='D', r='9',e='m_gold'},
+--         }, 
+--         type = 'Challenge Deck'
+--       },
+--     restrictions = {
+--         banned_cards = {
+--         },
+--         banned_tags = {
+--         },
+--         banned_other = {
+--         }
+--     }
+-- }
+-- local chal_unfavored = SMODS.Challenge(chal)
+
 --- create_card_alt (used by some jokers) ---
 -- Credit to the creators of Joker Evolution for the code
 

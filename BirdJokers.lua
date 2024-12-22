@@ -62,6 +62,13 @@ function SMODS.current_mod.process_loc_text()
             'copy of itself if {C:attention}sold'
         }
     }
+    G.localization.descriptions.Other['showdowns'] = {
+        name='Final Ante Showdown',
+        text = {
+            'the {C:attention}Ante #1# boss blind{}',
+            'counts as a {C:attention}Showdown blind{}'
+        }
+    }
     G.localization.misc.dictionary.ph_mr_bones = "Done gambling"
     G.localization.misc.labels['bird_sacred']='Sacred Geometry'
     G.localization.misc.labels['bird_returned_sacred']='Returned Sacred Geometry'
@@ -287,6 +294,22 @@ function SMODS.current_mod.process_loc_text()
                 local _, _, scoring_hand = JokerDisplay.evaluate_hand()
                 return ((last_card and playing_card == last_card) or (first_card and playing_card == first_card)) and ((#scoring_hand>=4 or #scoring_hand==1) and 2 or 1) * JokerDisplay.calculate_joker_triggers(joker_card) or 0
             end
+        }
+        JokerDisplay.Definitions["j_bird_jokers_canary"]={
+            text ={{ text = " +",colour = G.C.MULT },
+                { ref_table = "card.joker_display_values", ref_value = "mult",  colour = G.C.MULT }},
+            calc_function = function(card)
+                local mult_count = 0
+                local hand = next(G.play.cards) and G.play.cards or G.hand.highlighted
+                local text, _, scoring_hand = JokerDisplay.evaluate_hand(hand)
+                local last_card = JokerDisplay.calculate_rightmost_card(scoring_hand)
+                    for k, v in pairs(scoring_hand) do
+                        if v == last_card and v.facing and not (v.facing == 'back') and not v.debuff then
+                            mult_count = mult_count + JokerDisplay.calculate_card_triggers(v, not (text == 'Unknown') and scoring_hand or nil)
+                        end
+                    end
+                card.joker_display_values.mult = mult_count*((#scoring_hand>=4) and 8 or 4)
+            end
         }    
     end
 end
@@ -347,6 +370,12 @@ SMODS.Atlas{
 SMODS.Atlas{
     key = "wren",
     path = "j_bird_jokers_wren.png",
+    px = 71,
+    py = 95
+}
+SMODS.Atlas{
+    key = "canary",
+    path = "j_bird_jokers_canary.png",
     px = 71,
     py = 95
 }
@@ -451,7 +480,8 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
         }},
     loc_vars = function(self, info_queue, card)
         local showdown = (G.GAME.round_resets.ante and (G.GAME.win_ante + math.max(0, math.floor(G.GAME.round_resets.ante / G.GAME.win_ante) * G.GAME.win_ante))) or 8 
-        return {vars = {card.ability.mult,showdown}}
+        info_queue[#info_queue+1] = {set = 'Other', key = 'showdowns', vars = {showdown}}
+        return {vars = {card.ability.mult}}
     end,
     calculate = function(self, card, context)
         if context.setting_blind and not card.getting_sliced and not context.blueprint and context.blind.boss then
@@ -464,9 +494,9 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
                         return true end }))
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
                 return true end }))
-            else
-                 card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, 
-                    {message = ((G.GAME.round_resets.ante~=nil) and G.GAME.round_resets.ante..'/'..G.GAME.win_ante) or "nil"})
+            -- else
+            --      card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, 
+            --         {message = ((G.GAME.round_resets.ante~=nil) and G.GAME.round_resets.ante..'/'..G.GAME.win_ante) or "nil"})
             end
         end
         if context.cardarea == G.jokers and not context.before and not context.after then
@@ -1025,7 +1055,7 @@ local wren = SMODS.Joker{
     perishable_compat=true, 
     eternal_compat=false,
     pos={ x = 0, y = 0 },
-    cost=6,
+    cost=4,
     config= {extra = 1},
     loc_txt={
         name="Wren (Bits and Bops)",
@@ -1034,7 +1064,7 @@ local wren = SMODS.Joker{
             'cards used in scoring,',
             'retrigger them twice if',
             'scoring hand contains',
-            '{C:attention}4{} or more cards.',
+            '{C:attention}4 or more{} cards.',
         }},
     calculate = function(self,card, context)
         if context.repetition and context.cardarea == G.play then
@@ -1043,6 +1073,43 @@ local wren = SMODS.Joker{
                 return {
                     message = localize('k_again_ex'),
                     repetitions = card.ability.extra,
+                    card = card
+                }
+            end
+        end
+    end
+}
+local canary = SMODS.Joker{
+    key = "canary",
+    atlas = "canary",
+    name = "Canary (Bits and Bops)",
+    rarity=1, 
+    unlocked=true, 
+    discovered=false, 
+    blueprint_compat=true, 
+    perishable_compat=true, 
+    eternal_compat=false,
+    pos={ x = 0, y = 0 },
+    cost=4,
+    config= {extra = 4},
+    loc_txt={
+        name="Canary (Bits and Bops)",
+        text={
+            'the last card used in scoring',
+            'gives {C:mult}+4 mult{} when scored',
+            'gives {C:mult}+8 mult{} instead if scoring',
+            'hand contains {C:attention}4 or more{} cards.',
+            '{C:inactive}(will give {C:mult}+#1# mult{C:inactive})'
+        }},
+    loc_vars = function(self, info_queue, card)
+        return {vars = {card.ability.extra}}
+    end,
+    calculate = function(self,card, context)
+        if context.individual and context.cardarea == G.play then
+            card.ability.extra = (#context.scoring_hand >=4) and 8 or 4
+            if (context.other_card == context.scoring_hand[#(context.scoring_hand)]) then
+                return {
+                    mult = card.ability.extra,
                     card = card
                 }
             end

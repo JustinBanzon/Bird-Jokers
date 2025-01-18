@@ -493,13 +493,15 @@ local house_sparrow = SMODS.Joker{key="house_sparrow",
                         delay(0.4)
                         return true end }))
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+                    if SMODS.Mods["LobotomyCorp"] and (context.blind.name == "WhiteNight" or (context.blind.passives and context.blind.passives["psv_lobc_fixed_encounter"])) then
+                        card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ('Grr...')})
+                    end
                 return true end }))
             -- else
             --      card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, 
             --         {message = ((G.GAME.round_resets.ante~=nil) and G.GAME.round_resets.ante..'/'..G.GAME.win_ante) or "nil"})
             end
-        end
-        if context.cardarea == G.jokers and not context.before and not context.after then
+        elseif context.cardarea == G.jokers and context.joker_main then
             return {
                 message = localize{type='variable',key='a_mult',vars={card.ability.mult}},
                 mult_mod = card.ability.mult,
@@ -544,8 +546,7 @@ local unlucky_crow = SMODS.Joker{
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
                     return true
                 end
-            end
-            if context.cardarea == G.jokers and context.before then
+            elseif context.cardarea == G.jokers and context.before then
                 if (pseudorandom('unlucky_crow') < G.GAME.probabilities.normal/card.ability.extra.odds) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex'),colour = G.C.MULT})
@@ -563,8 +564,7 @@ local unlucky_crow = SMODS.Joker{
                     end
                 end
             end
-        end
-        if context.cardarea == G.jokers and not context.before and not context.after and card.ability.x_mult>1 then
+        elseif context.cardarea == G.jokers and context.joker_main and card.ability.x_mult>1 then
             return {
                 message = localize{type='variable',key='a_xmult',vars={card.ability.x_mult}},
                 Xmult_mod = card.ability.x_mult,
@@ -615,8 +615,7 @@ local lucky_swallow = SMODS.Joker{
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
                     return true
                 end
-            end
-            if context.cardarea == G.jokers and context.before then
+            elseif context.cardarea == G.jokers and context.before then
                 if (pseudorandom('lucky_swallow') < G.GAME.probabilities.normal*card.ability.extra.odds_numer/card.ability.extra.odds) then
                     card.ability.x_mult = card.ability.x_mult + card.ability.extra.x_mult
                     G.E_MANAGER:add_event(Event({
@@ -635,8 +634,7 @@ local lucky_swallow = SMODS.Joker{
                     card_eval_status_text((context.blueprint_card or card), 'extra', nil, nil, nil, {message = ((G.GAME.probabilities.normal*card.ability.extra.odds_numer)..' in '..card.ability.extra.odds),colour =  G.C.GREEN})
                 end
             end
-        end
-        if context.cardarea == G.jokers and not context.before and not context.after and card.ability.x_mult>1 then
+        elseif context.cardarea == G.jokers and context.joker_main and card.ability.x_mult>1 then
             return {
                 message = localize{type='variable',key='a_xmult',vars={card.ability.x_mult}},
                 Xmult_mod = card.ability.x_mult,

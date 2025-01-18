@@ -1,5 +1,5 @@
 # Bird Jokers
-A balatro mod made by **Justin** that adds five jokers that resemble birds
+A balatro mod made by **Justin** that adds some jokers that resemble birds
 # Requirements
 - Requires [Steamodded](https://github.com/Steamopollys/Steamodded/) v1.0.0 or higher (An installation guide is available there)
 # Installation

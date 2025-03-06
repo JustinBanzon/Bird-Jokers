@@ -399,7 +399,23 @@ local hai_hai = SMODS.Sound({
     key = "manzai_hai_hai",
     path = "hai_hai.ogg"
 })
-
+if SMODS.DrawStep then
+    
+    SMODS.DrawStep{
+        key = "bird_sacred",
+        order = 50,
+        func = function (card, layer)
+            for _, v in ipairs(G.bird_jokers_global_modifiers or {}) do
+                if card.ability[v] then
+                    G.bird_jokers_shared_modifiers[v].role.draw_major = card
+                    G.bird_jokers_shared_modifiers[v]:draw_shader('dissolve', nil, nil, nil, card.children.center)
+                    G.bird_jokers_shared_modifiers[v]:draw_shader('voucher', nil, card.ARGS.send_to_shader, nil, card.children.center)
+                end
+            end
+        end,
+        conditions = { vortex = false, facing = 'front' },
+    }
+end
 local config = SMODS.current_mod.config
 --- Function redefinitions ---
 local get_badge_colourref = get_badge_colour
@@ -457,6 +473,24 @@ return {n = G.UIT.ROOT, config = {r = 0.1, align = "t", padding = 0.1, colour = 
             }}
         }},
     }}
+end
+SMODS.current_mod.credits_tab = function()
+return {n = G.UIT.ROOT, config = {r = 0.1, align = "cm", padding = 0.1, colour = G.C.BLACK, minw = 10, minh = 6}, nodes = {
+    {n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "Character credits:", scale = 0.5, colour = G.C.UI.TEXT_LIGHT}},
+        }},
+        {n = G.UIT.R, config = {align = "cl", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "Crow People: Monmuent Valley, made by Ustwo Games", scale = 0.35, colour = G.C.UI.TEXT_LIGHT}},
+        }},{n = G.UIT.R, config = {align = "cl", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "Manzai Birds: Rhythm Heaven (JP), made by Nintendo", scale = 0.35, colour = G.C.UI.TEXT_LIGHT}},
+        }},{n = G.UIT.R, config = {align = "cl", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "Wren and Canary: Bits and Bops, made by Tempo Lab Games", scale = 0.35, colour = G.C.UI.TEXT_LIGHT}},
+        }},{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "SFX credits:", scale = 0.5, colour = G.C.UI.TEXT_LIGHT}},
+        }},{n = G.UIT.R, config = {align = "cl", padding = 0.05}, nodes = {
+            {n = G.UIT.T, config = { text = "Unlucky Crow, Lucky Swallow, Hummingbird Nerd: gamblecore by raxdflipnote", scale = 0.35, colour = G.C.UI.TEXT_LIGHT}},
+        }},}}
+
 end
 --- Jokers ---
 local house_sparrow = SMODS.Joker{key="house_sparrow",
@@ -1002,6 +1036,7 @@ local humingbird_nerd = SMODS.Joker{
         if context.end_of_round then
             card.ability.extra.percentage = 25
             if context.game_over and scored/required > premature_end then
+                done_gambling:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true)
                 G.E_MANAGER:add_event(Event({
                     func = function()
                         G.hand_text_area.blind_chips:juice_up()
@@ -1025,13 +1060,13 @@ local humingbird_nerd = SMODS.Joker{
             local premature_end = to_big and to_big(card.ability.extra.percentage*0.01) or card.ability.extra.percentage*0.01
             card.ability.extra.update_flag = false
             if scored/required > premature_end and scored < required then
-                done_gambling:play(1, (G.SETTINGS.SOUND.volume/100.0) * (G.SETTINGS.SOUND.game_sounds_volume/100.0),true)
                 G.STATE = G.STATES.HAND_PLAYED
                 G.STATE_COMPLETE = true
                 if G.GAME.current_round.hands_left <= 0 then 
                     G.GAME.current_round.hands_left = 0
+                else
+                    end_round()
                 end
-                end_round()
             elseif scored < required then
                 if card.ability.extra.percentage + 25 < 90 then
                     card.ability.extra.percentage = card.ability.extra.percentage + 25

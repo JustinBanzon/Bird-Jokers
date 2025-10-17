@@ -636,14 +636,24 @@ local lucky_swallow = SMODS.Joker{
     cost=6,
     config={ x_mult = 1 ,extra = {odds = 8,odds_numer = 1, x_mult=0.25}},
     loc_txt={
-        name="Lucky Swallow",
+        ['en-us']={
+            name="Lucky Swallow",
+            text={
+                'This Joker has a {C:green}#3# in #4#{} chance',
+                'to gain {X:mult,C:white}X#2#{} Mult every hand,',
+                'odds increase per consecutive hand',
+                'played without succeeding',
+                '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
+        }},
+        ['default']={
+             name="Lucky Swallow",
         text={
             'This Joker has a {C:green}#3# in #4#{} chance',
             'to gain {X:mult,C:white}X#2#{} Mult every hand,',
             'odds increase per consecutive hand',
             'played without succeeding',
-        '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
-        }},
+            '{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)'
+        }},},
     -- This Joker has a 
     -- 1 in 8 chance
     -- to gain X0.25 Mult
@@ -706,13 +716,23 @@ local manzai_birds = SMODS.Joker{
     cost=6,
     config={extra = {odds = 4, x_mult=2}},
     loc_txt={
-        name="Manzai Birds",
-        text={
-            'Retrigger the last played',
-            'card used in scoring once,',
-            '{C:green}#1# in #2#{} chance for retriggered',
-            'card to gain {X:mult,C:white}X#3#{} mult'
+        ['en-us'] = {
+            name="Manzai Birds",
+            text={
+                'Retrigger the last played',
+                'card used in scoring once,',
+                '{C:green}#1# in #2#{} chance for retriggered',
+                'card to gain {X:mult,C:white}X#3#{} mult'
         }},
+        ['default']={
+            name="Manzai Birds",
+            text={
+                'Retrigger the last played',
+                'card used in scoring once,',
+                '{C:green}#1# in #2#{} chance for retriggered',
+                'card to gain {X:mult,C:white}X#3#{} mult'
+        }}
+    },
     -- Retrigger the last played
     -- card used in scoring once,
     -- 1 in 4 chance for Retriggered
